@@ -1,0 +1,12 @@
+{
+  "packages": [
+    { "id": "single_session", "name": "Single session", "price_zar": 180 },
+    { "id": "5_sessions", "name": "5 sessions", "price_zar": 800 },
+    { "id": "12_sessions", "name": "12 sessions", "price_zar": 1680 }
+  ],
+  "saturday_availability": [
+    { "time": "09:00", "status": "available" },
+    { "time": "10:00", "status": "full" },
+    { "time": "11:00", "status": "available" }
+  ]
+}
