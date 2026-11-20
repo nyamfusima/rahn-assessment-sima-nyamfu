@@ -125,7 +125,7 @@ Each entry records: task/expectation, summary of the prompt given to the AI tool
   - No successful live Gemini response yet, because Google is still returning 503/504. So the real model's JSON passing Pydantic, and structured output with `gemini-3.8-flash`, are not yet proven.
   - Ctrl+C pressed by hand during a live call was not tried; only the automated tests cover it.
 - **Loop attempts**: 1 test run, 1 live run.
-- **Approval decision**: pending my review. Nothing was committed or pushed.
+- **Approval decision**: I reviewed the changes and the test evidence, and approved them.
 
 ### Iteration 5: Live verification succeeded (GENUINE record)
 
@@ -152,7 +152,7 @@ Each entry records: task/expectation, summary of the prompt given to the AI tool
   - No successful response from `gemini-3.8-flash` yet.
   - Ctrl+C pressed by hand during a live call is not yet confirmed.
 - **Loop attempts**: 4 live runs (3 `ai_error`, 1 success), no code fixes.
-- **Approval decision**: pending my review. Nothing was committed or pushed.
+- **Approval decision**: I reviewed the changes and the test evidence, and approved them.
 
 ## Reflection questions
 

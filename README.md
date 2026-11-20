@@ -2,7 +2,7 @@
 
 **Hours spent: 4**
 
-> **Project status: Phase 3 built, awaiting review.** The command-line assistant is implemented and 67 automated tests pass with Gemini mocked. **A live end-to-end run succeeded** on 2026-11-20 with `gemini-3.5-flash-lite` and `GEMINI_TIMEOUT_SECONDS=90`. It produced a valid structured draft, staff answered `y`, and `sent` was logged. `gemini-3.8-flash` still returned HTTP 503/504 that day. See [What doesn't work yet](#what-doesnt-work-yet).
+> **Project status: complete and submitted.** The command-line assistant is implemented and 67 automated tests pass with Gemini mocked. **A live end-to-end run succeeded** on 2026-11-20 with `gemini-3.5-flash-lite` and `GEMINI_TIMEOUT_SECONDS=90`. It produced a valid structured draft, staff answered `y`, and `sent` was logged. `gemini-3.8-flash` still returned HTTP 503/504 that day. See [What doesn't work yet](#what-doesnt-work-yet).
 
 ## Project overview
 
@@ -23,7 +23,7 @@ Out of scope (per the brief): WhatsApp or any messaging integration, bookings, p
 5. Print the draft and ask `Send? (y/n)`.
 6. Record the outcome in a local `status_log.json`. A "sent" status is never recorded when staff answer `n`, the AI returns invalid JSON, the AI call fails or times out, or the reply is an escalation that staff did not approve.
 
-**Implemented and tested so far:** all six steps, with Gemini mocked in the automated tests (see `docs/REGRESSION_TESTS.md`).
+**Implemented and tested:** all six steps. They are covered by 67 automated tests with Gemini mocked, and by one successful live end-to-end run with `gemini-3.5-flash-lite` (see `docs/REGRESSION_TESTS.md`).
 
 How the safety rules are enforced:
 
