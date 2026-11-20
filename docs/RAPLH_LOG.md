@@ -130,7 +130,7 @@ Each entry records: task/expectation, summary of the prompt given to the AI tool
 ### Iteration 5: Live verification succeeded (GENUINE record)
 
 - **Task / expectation**: Prove the assistant end to end against the real Gemini API: structured output passes Pydantic, the draft uses only data-file facts, and the approval step records `sent`.
-- **What I changed**: configuration only, in my local `.env`, which is git-ignored and not committed. I set `GEMINI_MODEL=gemini-3.5-flash-lite` (instead of `gemini-3.8-flash`, which kept returning 503/504) and `GEMINI_TIMEOUT_SECONDS=90` (instead of the 30 s default). No code was changed.
+- **What I changed**: configuration only, in my local `.env`, which is git-ignored and not committed. I replaced the API key with a new key from a different Google account, because the HTTP 429 RESOURCE_EXHAUSTED error showed the free-tier quota on my old account was used up. I set `GEMINI_MODEL=gemini-3.5-flash-lite` (instead of `gemini-3.8-flash`, which kept returning 503/504) and `GEMINI_TIMEOUT_SECONDS=90` (instead of the 30 s default). No code was changed.
 - **Runs (from `status_log.json`)**:
   - Three runs from 12:47 to 12:51 UTC each logged `ai_error`, and none was sent:
     - cancelled by staff (Ctrl+C) while waiting for the AI service;

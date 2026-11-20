@@ -206,8 +206,20 @@ Checked on Python 3.13.13 with `google-genai` 3.6.1: **67 passed**. The tests ne
 
 ### 1. It is 22:00, and you have been stuck on the same error for three hours. What do you do next, step by step?
 
+The first step is to stop editing and read the actual error, because three hours of the same failure means I am guessing. I go back to the last known working state and reproduce it once, deliberately. Then I read the full message and the logs rather than the summary. Next I test one variable at a time: settings, timeout, credentials, network. That is how I found my Gemini calls were failing, and the 429 that showed my free tier quota was exhausted on an old account. A new key, gemini-3.5-flash-lite instead of gemini-3.8-flash, and a timeout of 90 seconds fixed it. I also write down what I have tried, so the morning is not a restart. Past midnight, I stop.
+
+
 ### 2. It is Wednesday. Your teammate has not replied to messages since Monday, and you present together on Friday. What do you do?
+
+I chase once, with a deadline attached. I message them on Wednesday morning saying I need their part by Thursday noon to assemble Friday, and I offer to take whichever piece they are least likely to reach. Meanwhile I assume nothing arrives and build around my own sections, leaving clear gaps for theirs. If Thursday noon passes, I tell the mentor a section may be missing, before Friday rather than during it. On the day I present my part properly and cover what I can of theirs without pretending it is finished. What I avoid is sitting quietly until Thursday night and then panicking. Silence is usually workload or something personal, not disinterest, so I stay light about it.
+
 
 ### 3. Your mentor tells you that the approach you have spent two days on is wrong. How do you react, and what do you do next?
 
+My first reaction is to ask what specifically is wrong, because "wrong" covers a lot and only part of it is usually true. If the mentor can point at a concrete flaw, I accept it quickly and change that part. That happened with the Gemini model. The calls kept failing, the model choice looked like the problem, and the obvious move was to abandon it. Instead I checked, and the real fault was an exhausted quota on my account and a timeout that was too short. The fix was configuration, not a rebuild. Two days of work stays if the diagnosis is right. What I try not to do is defend the work out of sunk cost.
+
+
 ### 4. From January to March 2027, you must attend sessions every Monday, Wednesday and Friday. What in your life could get in the way, and what is your plan for each thing?
+
+Remote makes power and internet the two real risks, so both get a plan. Load shedding first: I check the schedule weekly, keep a charged laptop and a power bank, and know which nearby places have power and wifi so a session is never simply lost. Second, internet failure: a phone hotspot as backup, a data bundle I do not burn through, and a voice only fallback if video will not hold. Third, a daytime commitment at home, since Monday, Wednesday and Friday do not come free by default. I block those slots now and tell the people I live with that they are fixed. If a session is lost anyway, I ask for the notes and catch up before the next one.
+
