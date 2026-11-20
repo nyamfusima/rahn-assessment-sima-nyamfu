@@ -16,3 +16,4 @@ env/
 
 # Runtime output
 status_log.json
+status_log.json.tmp

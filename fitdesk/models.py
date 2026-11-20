@@ -66,6 +66,8 @@ class StatusRecord(BaseModel):
     intent: Optional[Intent] = None
     draft: Optional[str] = None
     is_escalation: bool = False
+    # What the AI suggested. Logged for audit only: staff approval is always required.
+    ai_requires_human_approval: Optional[bool] = None
     approved: bool = False
     status: Status
     reason: Optional[str] = None

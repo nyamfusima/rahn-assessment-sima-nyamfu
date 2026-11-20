@@ -1,8 +1,8 @@
 # RAHN FitDesk Enquiry Assistant
 
-**Hours spent: `TODO: [HOURS_SPENT]`** <!-- Fill in the actual hours you spent. Do not estimate on anyone's behalf. -->
+**Hours spent: 4**
 
-> **Project status: early stage.** Only the project scaffolding, requirements (`docs/SRS.md`) and approved data file exist so far. The assistant itself is **not built yet**. See [What doesn't work yet](#what-doesnt-work-yet).
+> **Project status: Phase 3 built, awaiting review.** The command-line assistant is implemented and 67 automated tests pass with Gemini mocked. **A live end-to-end run succeeded** on 2026-11-20 with `gemini-3.5-flash-lite` and `GEMINI_TIMEOUT_SECONDS=90`. It produced a valid structured draft, staff answered `y`, and `sent` was logged. `gemini-3.8-flash` still returned HTTP 503/504 that day. See [What doesn't work yet](#what-doesnt-work-yet).
 
 ## Project overview
 
@@ -14,7 +14,7 @@ Out of scope (per the brief): WhatsApp or any messaging integration, bookings, p
 
 ## Features and scope
 
-**Planned behaviour** (see `docs/SRS.md` for the numbered requirements):
+**Behaviour** (see `docs/SRS.md` for the numbered requirements):
 
 1. Read one customer message typed at the command line.
 2. Send it to the Gemini API and receive structured JSON (`intent`, `details`, `requires_human_approval`), validated with a Pydantic model.
@@ -23,7 +23,19 @@ Out of scope (per the brief): WhatsApp or any messaging integration, bookings, p
 5. Print the draft and ask `Send? (y/n)`.
 6. Record the outcome in a local `status_log.json`. A "sent" status is never recorded when staff answer `n`, the AI returns invalid JSON, the AI call fails or times out, or the reply is an escalation that staff did not approve.
 
-**Implemented and tested so far:** none of the above. See [What doesn't work yet](#what-doesnt-work-yet).
+**Implemented and tested so far:** all six steps, with Gemini mocked in the automated tests (see `docs/REGRESSION_TESTS.md`).
+
+How the safety rules are enforced:
+
+- Gemini only **labels** the enquiry (which packages, which Saturday times, anything else asked). The reply is built only from the data file, so no text written by the AI ever appears in it.
+- Anything not found in the data adds the exact escalation sentence. If nothing can be answered, the draft is exactly that sentence.
+- The `Send? (y/n)` prompt is always shown for a valid draft, even if the AI says approval is not needed. Only `y` or `n` are accepted (case and surrounding spaces are ignored); anything else repeats the prompt, and end of input counts as "not approved".
+- If the AI call fails or times out, or its output is invalid, no draft is built and staff are not asked. The failure is logged as `ai_error` or `invalid_ai_output`.
+- API errors are shown and logged as `HTTP <code> <STATUS>: <message>`, for example `HTTP 503 UNAVAILABLE: This model is currently experiencing high demand...`. The message is cleaned so it never contains the API key, request headers or response details.
+- Short-lived errors (HTTP 429, 500, 502, 503, 504) are retried by the Gemini SDK, at most **3 attempts** in total with short waits. Permanent errors such as 400, 403 and 404 are not retried.
+- Ctrl+C exits cleanly without a traceback. If pressed while waiting for Gemini, it is logged as `ai_error` (cancelled by staff), never `sent`.
+
+Log statuses in `status_log.json`: `sent`, `rejected`, `escalation_not_approved`, `invalid_ai_output`, `ai_error`.
 
 ## Technology stack
 
@@ -31,7 +43,7 @@ Out of scope (per the brief): WhatsApp or any messaging integration, bookings, p
 - Google Gemini API via the `google-genai` package (free key from Google AI Studio)
 - `pydantic` for validating the AI's JSON output
 - `python-dotenv` for loading settings from `.env`
-- `pytest` for automated tests (Gemini is to be mocked, so no API key is needed)
+- `pytest` for automated tests (Gemini is mocked, so no API key is needed)
 
 Dependencies in `requirements.txt` are unpinned.
 
@@ -39,24 +51,25 @@ Dependencies in `requirements.txt` are unpinned.
 
 ```text
 rahn-assessment/
-├── main.py                    # Entry point (currently a placeholder)
+├── main.py                    # Entry point
 ├── requirements.txt           # Python dependencies
+├── pytest.ini                 # Lets pytest find the fitdesk package
 ├── .env.example               # Template for settings; never put a real key here
 ├── .gitignore                 # Keeps .env, virtual environments and status_log.json out of Git
 ├── data/
 │   └── fitdesk_data.json      # Approved packages/prices and Saturday availability (the only source of facts)
-├── fitdesk/                   # Application package (all modules are placeholders so far)
-│   ├── cli.py                 # Command-line loop
+├── fitdesk/                   # Application package
+│   ├── cli.py                 # Command-line flow: enquiry -> AI -> draft -> approval -> log
 │   ├── gemini_client.py       # Gemini API wrapper (the only module meant to use the network)
 │   ├── models.py              # Pydantic models for the AI output and the log record
 │   ├── knowledge_base.py      # Loads and queries the data file
 │   ├── response_builder.py    # Builds the draft reply or the escalation phrase
 │   ├── approval.py            # "Send? (y/n)" approval step
 │   └── audit_log.py           # Writes outcomes to status_log.json
-├── tests/                     # pytest tests (placeholders so far)
+├── tests/                     # pytest tests (Gemini mocked, network blocked)
 └── docs/
     ├── SRS.md                 # Requirements, acceptance criteria, assumptions
-    ├── REGRESSION_TESTS.md    # Regression test descriptions (placeholder, no results yet)
+    ├── REGRESSION_TESTS.md    # Regression tests with actual results
     └── RAPLH_LOG.md           # Record of AI-assisted work iterations
 ```
 
@@ -75,8 +88,6 @@ rahn-assessment/
    git clone https://github.com/nyamfusima/rahn-assessment-sima-nyamfu.git
    cd rahn-assessment-sima-nyamfu
    ```
-
-   <!-- TODO: confirm the final repository name/URL before submitting. The brief requires rahn-assessment-firstname-lastname. -->
 
 2. **Create and activate a virtual environment**
 
@@ -112,16 +123,45 @@ rahn-assessment/
    GEMINI_MODEL=<a Gemini model name available to your key>
    ```
 
+   Optional: `GEMINI_TIMEOUT_SECONDS=30` (default 30). This is the limit for **each** attempt. With up to 3 attempts, one enquiry can wait up to about 100 seconds before the call is treated as failed and nothing is sent.
+
    - `.env.example` is only a **template**. It must **never** contain a real key, because it is committed to Git.
    - `.env` holds your real key. It is listed in `.gitignore` and must never be committed or shared.
 
 ## Run
 
+With the virtual environment active, either type the message when asked:
+
 ```powershell
 python main.py
 ```
 
-`main.py` is currently a placeholder. When run, it exits immediately with no output and does nothing (checked). The assistant itself is not implemented yet.
+or pass it in quotes:
+
+```powershell
+python main.py "How much is the 12-session pack and do you have Saturday slots?"
+```
+
+The program handles one enquiry per run:
+
+1. It shows the draft reply.
+2. It asks `Send? (y/n)`.
+3. It appends the outcome to `status_log.json` in the project folder. This file is git-ignored and stays on your computer.
+
+Example of a draft for the message above (taken from a test run with Gemini mocked):
+
+```text
+Draft reply:
+  The 12 sessions package costs R1,680. Saturday slots available: 09:00, 11:00; full: 10:00.
+Send? (y/n)
+```
+
+Exit codes:
+
+- `0`: an enquiry was processed. This includes when staff answered `n`.
+- `1`: the AI failed, timed out or returned invalid output. Nothing was sent, and the failure was logged.
+- `2`: a setup problem, such as a missing key or model, an unreadable data file, a corrupt log or an empty message.
+- `130`: cancelled with Ctrl+C. Nothing was sent.
 
 ## Test
 
@@ -129,7 +169,7 @@ python main.py
 python -m pytest
 ```
 
-Checked on Python 3.13.13: pytest starts and **collects 0 tests**, because the test files are still placeholders. There are no passing tests to report yet.
+Checked on Python 3.13.13 with `google-genai` 3.6.1: **67 passed**. The tests need no API key and make no network calls. A fixture unsets the Gemini settings and blocks sockets, and Gemini is replaced by a fake. The retry tests use the real Gemini SDK against a fake HTTP server. Test descriptions and results are in `docs/REGRESSION_TESTS.md`.
 
 ## AI use
 
@@ -138,21 +178,29 @@ Checked on Python 3.13.13: pytest starts and **collects 0 tests**, because the t
   - drafting `docs/SRS.md` and filling `data/fitdesk_data.json`
   - drafting this README
   - checking the brief and Playbook requirements
+  - implementing the Phase 3 code in `fitdesk/` and `main.py`, writing the pytest tests, and filling `docs/REGRESSION_TESTS.md` with the actual results
+  - investigating the live Gemini `ServerError` (HTTP 503/504) and implementing the fix: a clear, safe error message, bounded retries and clean Ctrl+C handling (Iteration 4)
+  - drafting the `docs/RAPLH_LOG.md` entries and the two reflection answers at the end of that log
+- **ChatGPT** (OpenAI) was used for: understanding the requirements in the brief, and writing the prompts I gave to Claude Code.
 - Each step was reviewed by me before it was accepted. Iterations are recorded in `docs/RAPLH_LOG.md`.
-- Other AI tools used: `TODO: [OTHER_AI_TOOLS_OR_NONE]`
-- Exact Claude model(s) and how much generated text was edited by hand: `TODO: [CONFIRM]`
+- **Claude model:** Claude Opus, used in Claude Code for planning, architecture and implementation, and on claude.ai for a final check of the submission against the brief.
 - The Working style answers below are written by me, without AI.
 
 ## What doesn't work yet
 
-- **The assistant does not run.** `main.py` and every module in `fitdesk/` are placeholders containing only a docstring.
-- **No Gemini integration.** Nothing calls the API, validates JSON with Pydantic, or handles API failures and timeouts.
-- **No lookup, drafting or escalation logic.** The data file exists, but nothing reads it yet, and the escalation phrase is not implemented in code.
-- **No approval step and no status log.** `Send? (y/n)` and `status_log.json` are not implemented.
-- **No automated tests.** `pytest` collects 0 tests. `docs/REGRESSION_TESTS.md` is a placeholder with no test results.
-- **Environment check.** In the environment used to prepare this README, the `google-genai` package was not installed, so no Gemini-related setup has been tested.
-- **Open items:** `GEMINI_MODEL` has no chosen value, dependencies are unpinned, and the repository name must be confirmed against the brief's naming rule.
-- **Design limits by intent:** drafts cannot be edited by staff, "sent" is a log status only, and the data file has Saturday times without dates (see assumptions in `docs/SRS.md`).
+- **Live use is proven on one model only.** With `GEMINI_MODEL=gemini-3.5-flash-lite`, a live run on 2026-11-20 showed that Gemini's structured output passes the Pydantic model. The draft was built from the data file only, and the `y` approval recorded `sent`. Other models have not been proven:
+  - **`gemini-3.8-flash`** returned only **503 UNAVAILABLE** ("high demand") or **504 DEADLINE_EXCEEDED** that day. The app handled this correctly: it showed the HTTP status, retried at most 3 times and logged `ai_error`, with nothing sent. A successful response from that model has not been seen.
+- **The default 30 s timeout can be too short under load.** The timeout applies to each attempt and is also sent to Google as the server deadline, so a busy model can hit it and return 504. **Recommended: `GEMINI_TIMEOUT_SECONDS=90`**, which is what the successful live run used. The code default is still 30 s.
+- **Ctrl+C during a live call** is covered by automated tests only. It has not been tried by hand during a real request.
+- **`GEMINI_MODEL` has no default.** You must set a model name that your key can use. `gemini-3.5-flash-lite` is the one proven live.
+- **Classification quality depends on Gemini.** If Gemini labels a question wrongly, the draft can still only contain facts from the data file. But it may then answer a different question from the one asked, or escalate when it did not need to. Staff approval is the safeguard.
+- **Times like "9am" are escalated.** The time matcher accepts `09:00`, `9:00`, `0900` and `9h00`, but not am/pm forms. Gemini is told to return 24-hour times, and anything else escalates (safe, but not ideal).
+- **Dependencies are unpinned** in `requirements.txt`. Tested versions: `google-genai` 3.6.1, `pydantic` 2.14.4, `python-dotenv` 1.2.4, `pytest` 9.2.0.
+- **Design limits by intent:**
+  - one enquiry per run;
+  - drafts cannot be edited by staff;
+  - "sent" is a log status only;
+  - the data file has Saturday times without dates (see the assumptions in `docs/SRS.md`).
 
 ## Working style
 
